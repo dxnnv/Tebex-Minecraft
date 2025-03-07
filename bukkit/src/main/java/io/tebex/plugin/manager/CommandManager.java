@@ -26,12 +26,10 @@ public class CommandManager {
                 new ForceCheckCommand(platform),
                 new HelpCommand(platform, this),
                 new BanCommand(platform),
-                new CheckoutCommand(platform),
                 new DebugCommand(platform),
                 new InfoCommand(platform),
                 new LookupCommand(platform),
                 new ReportCommand(platform),
-                new SendLinkCommand(platform),
                 new GoalsCommand(platform)
         ).forEach(command -> {
             commands.put(command.getName(), command);
