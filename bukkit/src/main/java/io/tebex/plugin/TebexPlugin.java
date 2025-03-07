@@ -92,10 +92,6 @@ public final class TebexPlugin extends JavaPlugin implements Platform {
         placeholderManager.register(new BukkitNamePlaceholder(placeholderManager));
         placeholderManager.register(new UuidPlaceholder(placeholderManager));
 
-
-        // Migrate the config from BuycraftX.
-        migrateConfig();
-
         // Initialise the platform.
         init();
 
@@ -138,71 +134,6 @@ public final class TebexPlugin extends JavaPlugin implements Platform {
 
     public List<ServerEvent> getServerEvents() {
         return serverEvents;
-    }
-
-    public void migrateConfig() {
-        File oldPluginDir = new File("plugins/BuycraftX");
-        if (!oldPluginDir.exists()) return;
-
-        File oldConfigFile = new File(oldPluginDir, "config.properties");
-        if(!oldConfigFile.exists()) return;
-
-        info("Detected legacy BuycraftX configuration. Attempting to migrate...");
-
-        try {
-            // Load old properties
-            Properties properties = new Properties();
-            properties.load(Files.newInputStream(oldConfigFile.toPath()));
-
-            String secretKey = properties.getProperty("server-key", null);
-            secretKey = !Objects.equals(secretKey, "INVALID") ? secretKey : null;
-
-            if(secretKey != null) {
-                // Migrate their existing config.
-                configYaml.set("buy-command.name", properties.getProperty("buy-command-name", null));
-                configYaml.set("buy-command.enabled", ! Boolean.parseBoolean(properties.getProperty("disable-buy-command", null)));
-
-                configYaml.set("check-for-updates", properties.getOrDefault("check-for-updates", null));
-                configYaml.set("verbose", properties.getOrDefault("verbose", false));
-
-                configYaml.set("server.proxy", properties.getOrDefault("is-bungeecord", false));
-                configYaml.set("server.secret-key", secretKey);
-
-                // Save new config
-                configYaml.save();
-
-                config = loadServerPlatformConfig(configYaml);
-
-                sdk = new SDK(this, config.getSecretKey());
-
-                info("Successfully migrated your config from BuycraftX.");
-            }
-
-            // If BuycraftX is installed, delete the plugin JAR.
-            boolean legacyPluginEnabled = Bukkit.getPluginManager().isPluginEnabled("BuycraftX");
-            if(legacyPluginEnabled) {
-                try {
-                    JavaPlugin plugin = (JavaPlugin) getServer().getPluginManager().getPlugin("BuycraftX");
-
-                    if(plugin != null) {
-                        Method getFileMethod = JavaPlugin.class.getDeclaredMethod("getFile");
-                        getFileMethod.setAccessible(true);
-                        File file = (File) getFileMethod.invoke(plugin);
-
-                        Bukkit.getPluginManager().disablePlugin(plugin);
-                        boolean deletedLegacyPluginJar = file.delete();
-                        if(!deletedLegacyPluginJar) {
-                            info("Failed to fully delete the legacy BuycraftX plugin.");
-                            info("Please delete it manually in your /plugins folder to avoid conflicts.");
-                        }
-                    }
-                } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
-                    warning("Failed to disable legacy BuycraftX plugin: " + e.getMessage(), "Please remove it manually from your /plugins folder.");
-                }
-            }
-        } catch (IOException e) {
-            warning("Failed to migrate BuycraftX configuration: " + e.getMessage(), "Please set your secret key with /tebex secret <key> to enable your store.");
-        }
     }
 
     @Override
